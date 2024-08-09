@@ -1,0 +1,77 @@
+openapi: 3.0.0
+info:
+  title: IPInfo API
+  description: API for retrieving information about IP addresses.
+  version: 1.0.0
+servers:
+  - url: 'https://example.com/api'
+    description: Base URL for the IPInfo API
+paths:
+  /{ip_address}/json:
+    get:
+      summary: Retrieve information about an IP address
+      description: Retrieve detailed information for a given IP address.
+      parameters:
+        - in: path
+          name: ip_address
+          schema:
+            type: string
+          required: true
+          description: The IP address to retrieve information about.
+        - in: query
+          name: token
+          schema:
+            type: string
+          required: true
+          description: API key for authentication.
+      responses:
+        '200':
+          description: Information about the IP address.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ip:
+                    type: string
+                  city:
+                    type: string
+                  region:
+                    type: string
+                  country:
+                    type: string
+                  loc:
+                    type: string
+                  org:
+                    type: string
+                  [other_fields]:
+                    type: string
+                    description: Additional fields provided by the API
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+components:
+  schemas:
+    IPInfoResponse:
+      type: object
+      properties:
+        ip:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        loc:
+          type: string
+        org:
+          type: string
+        [other_fields]:
+          type: string
+          description: Additional fields provided by the API

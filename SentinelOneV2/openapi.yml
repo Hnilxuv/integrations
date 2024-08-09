@@ -1,0 +1,360 @@
+openapi: 3.0.0
+info:
+  title: SentinelOne API
+  version: 1.0.0
+  description: API for interacting with SentinelOne V2.
+servers:
+  - url: https://api.sentinelone.com
+    description: SentinelOne API server
+
+paths:
+  /web/api/v2.1/hash/{hash}/verdict:
+    get:
+      summary: Get hash verdict
+      parameters:
+        - in: path
+          name: hash
+          required: true
+          schema:
+            type: string
+          description: The hash value to get the verdict for
+      responses:
+        '200':
+          description: Successful response with hash verdict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      verdict:
+                        type: string
+                        description: The verdict of the hash
+
+  /web/api/v2.1/dv/events:
+    get:
+      summary: Get events
+      parameters:
+        - in: query
+          name: query_id
+          schema:
+            type: string
+          description: The query ID for fetching events
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Cursor for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          description: Number of events to return
+      responses:
+        '200':
+          description: Successful response with events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+                    properties:
+                      next_cursor:
+                        type: string
+
+  /web/api/v2.1/dv/init-query:
+    post:
+      summary: Create a query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                fromDate:
+                  type: string
+                toDate:
+                  type: string
+      responses:
+        '200':
+          description: Successful response with query ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      queryId:
+                        type: string
+
+  /web/api/v2.1/dv/events/process:
+    get:
+      summary: Get processes
+      parameters:
+        - in: query
+          name: query_id
+          schema:
+            type: string
+          description: The query ID for fetching processes
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Number of processes to return
+      responses:
+        '200':
+          description: Successful response with processes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /web/api/v2.1/restrictions:
+    get:
+      summary: Get blocklist
+      parameters:
+        - in: query
+          name: tenant
+          schema:
+            type: boolean
+          description: Whether to include tenant-specific restrictions
+        - in: query
+          name: groupIds
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of group IDs
+        - in: query
+          name: siteIds
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of site IDs
+        - in: query
+          name: accountIds
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of account IDs
+        - in: query
+          name: skip
+          schema:
+            type: integer
+          description: Number of items to skip
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Number of items to return
+        - in: query
+          name: osType
+          schema:
+            type: string
+          description: OS type
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+          description: Sort order (asc or desc)
+        - in: query
+          name: value_contains
+          schema:
+            type: string
+          description: Value to search for (case-insensitive)
+      responses:
+        '200':
+          description: Successful response with blocklist data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /web/api/v2.1/cloud-detection/alerts/incident:
+    post:
+      summary: Update alert status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    incidentStatus:
+                      type: string
+                filter:
+                  type: object
+                  properties:
+                    ids:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '200':
+          description: Successful response with updated alert
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+
+  /web/api/v2.1/cloud-detection/alerts:
+    get:
+      summary: Get alerts
+      parameters:
+        - in: query
+          name: ruleName__contains
+          schema:
+            type: string
+          description: Rule name contains this value
+        - in: query
+          name: incidentStatus
+          schema:
+            type: string
+          description: Status of the incident
+        - in: query
+          name: analystVerdict
+          schema:
+            type: string
+          description: Verdict of the analyst
+        - in: query
+          name: createdAt__lte
+          schema:
+            type: string
+          description: Creation date less than or equal to
+        - in: query
+          name: createdAt__gte
+          schema:
+            type: string
+          description: Creation date greater than or equal to
+        - in: query
+          name: ids
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of alert IDs
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Number of alerts to return
+        - in: query
+          name: siteIds
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of site IDs
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Cursor for pagination
+      responses:
+        '200':
+          description: Successful response with alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+                    properties:
+                      next_cursor:
+                        type: string
+
+  /web/api/v2.1/agents/applications:
+    get:
+      summary: Get installed applications
+      parameters:
+        - in: query
+          name: ids
+          schema:
+            type: array
+            items:
+              type: string
+          description: List of agent IDs
+      responses:
+        '200':
+          description: Successful response with installed applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /web/api/v2.1/agents/actions/initiate-scan:
+    post:
+      summary: Initiate endpoint scan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: object
+                  properties:
+                    ids:
+                      type: array
+                      items:
+                        type: string
+                data:
+                  type: object
+      responses:
+        '200':
+          description: Successful response with scan initiation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
