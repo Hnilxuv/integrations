@@ -776,25 +776,25 @@ def cherwell_get_business_object_summary_command():
                      "raw_response": result})
 
 
-if orenctl.command() == 'cherwell-create-business-object':
+if orenctl.command() == 'cherwell_create_business_object':
     create_business_object_command()
-elif orenctl.command() == 'cherwell-update-business-object':
+elif orenctl.command() == 'cherwell_update_business_object':
     update_business_object_command()
-elif orenctl.command() == 'cherwell-get-business-object':
+elif orenctl.command() == 'cherwell_get_business_object':
     get_business_object_command()
-elif orenctl.command() == 'cherwell-download-attachments':
+elif orenctl.command() == 'cherwell_download_attachments':
     download_attachments_command()
-elif orenctl.command() == 'cherwell-upload-attachment':
+elif orenctl.command() == 'cherwell_upload_attachment':
     upload_attachment_command()
-elif orenctl.command() == 'cherwell-get-attachments-info':
+elif orenctl.command() == 'cherwell_get_attachments_info':
     get_attachments_info_command()
-elif orenctl.command() == 'cherwell-remove-attachment':
+elif orenctl.command() == 'cherwell_remove_attachment':
     remove_attachment_command()
-elif orenctl.command() == 'cherwell-query-business-object':
+elif orenctl.command() == 'cherwell_query_business_object':
     query_business_object_command()
-elif orenctl.command() == 'cherwell-run-saved-search':
+elif orenctl.command() == 'cherwell_run_saved_search':
     cherwell_run_saved_search_command()
-elif orenctl.command() == 'cherwell-get-business-object-id':
+elif orenctl.command() == 'cherwell_get_business_object_id':
     cherwell_get_business_object_id_command()
-elif orenctl.command() == 'cherwell-get-business-object-summary':
+elif orenctl.command() == 'cherwell_get_business_object_summary':
     cherwell_get_business_object_summary_command()
