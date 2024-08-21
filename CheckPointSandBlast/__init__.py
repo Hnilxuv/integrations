@@ -682,3 +682,14 @@ def quota_command():
         "outputs": output,
         "raw_response": raw_outputs,
     })
+
+if orenctl.command() == 'file':
+    file_command()
+elif orenctl.command() == 'sandblast_query':
+    query_command()
+elif orenctl.command() == 'sandblast_upload':
+    setup_upload_polling_command()
+elif orenctl.command() == 'sandblast_download':
+    download_command()
+elif orenctl.command() == 'sandblast_quota':
+    quota_command()
