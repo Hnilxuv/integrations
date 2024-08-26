@@ -73,21 +73,14 @@ def body_update_group(original_group):
 class Automox(object):
     def __init__(self):
         self.url = orenctl.getParam("url")
-        self.domain = orenctl.getParam("domain")
         self.insecure = True if orenctl.getParam("insecure") else False
         self.api_key = orenctl.getParam("api_key")
 
         self.session = requests.session()
         self.session.headers = {
-            "accept": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
         self.proxy = orenctl.getParam("proxy")
-        proxies = {
-            "http": self.proxy,
-            "https": self.proxy
-        }
-        self.session.proxies.update(proxies)
 
     def http_request(self, method, url_suffix, *args, **kwargs):
         url = self.url + url_suffix
@@ -141,7 +134,7 @@ class Automox(object):
 
         return results
 
-    def list_organizations(self, limit, page):
+    def list_organization(self, limit, page):
         params = {
             "limit": limit,
             "page": page,
@@ -352,7 +345,7 @@ def list_organizations():
     client = Automox()
     limit = int(orenctl.getArg(LIMIT_IDENTIFIER) if orenctl.getArg(LIMIT_IDENTIFIER) else None)
     page = int(orenctl.getArg(PAGE_IDENTIFIER) if orenctl.getArg(PAGE_IDENTIFIER) else None)
-    result = client.list_organizations(limit, page)
+    result = client.list_organization(limit, page)
 
     excluded_keys = [
         'addr1',
@@ -662,29 +655,29 @@ def delete_group():
     orenctl.results(results)
 
 
-if orenctl.command() == 'automox-devices-list':
+if orenctl.command() == 'automox_devices_list':
     list_devices()
-elif orenctl.command() == 'automox-organizations-list':
+elif orenctl.command() == 'automox_organizations_list':
     list_organizations()
-elif orenctl.command() == 'automox-vulnerability-sync-batch-action':
+elif orenctl.command() == 'automox_vulnerability_sync_batch_action':
     action_on_vulnerability_sync_batch()
-elif orenctl.command() == 'automox-vulnerability-sync-task-action':
+elif orenctl.command() == 'automox_vulnerability_sync_task_action':
     action_on_vulnerability_sync_task()
-elif orenctl.command() == 'automox-vulnerability-sync-batch-get':
+elif orenctl.command() == 'automox_vulnerability_sync_batch_get':
     get_vulnerability_sync_batch()
-elif orenctl.command() == 'automox-vulnerability-sync-batches-list':
+elif orenctl.command() == 'automox_vulnerability_sync_batches_list':
     list_vulnerability_sync_batches()
-elif orenctl.command() == 'automox-vulnerability-sync-tasks-list':
+elif orenctl.command() == 'automox_vulnerability_sync_tasks_list':
     list_vulnerability_sync_tasks()
-elif orenctl.command() == 'automox-policies-list':
+elif orenctl.command() == 'automox_policies_list':
     list_policies()
-elif orenctl.command() == 'automox-device-update':
+elif orenctl.command() == 'automox_device_update':
     update_device()
-elif orenctl.command() == 'automox-groups-list':
+elif orenctl.command() == 'automox_groups_list':
     list_groups()
-elif orenctl.command() == 'automox-group-create':
+elif orenctl.command() == 'automox_group_create':
     create_group()
-elif orenctl.command() == 'automox-group-update':
+elif orenctl.command() == 'automox_group_update':
     update_group()
-elif orenctl.command() == 'automox-group-delete':
+elif orenctl.command() == 'automox_group_delete':
     delete_group()
