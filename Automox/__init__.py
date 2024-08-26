@@ -29,7 +29,7 @@ def remove_key(keys_to_traverse, data):
             del data[key]
 
     except Exception:
-        orenctl.results(orenctl.error(f"Key '{key}' not found in Automox response."))
+        return ValueError(f"Key '{key}' not found in Automox response.")
 
     return data
 
@@ -47,7 +47,7 @@ def get_default_server_group_id(client, org_id):
     page = 0
 
     while default_server_group_id is None:
-        groups = client.list_groups(org_id, 250, page)
+        groups = client.list_group(org_id, 250, page)
 
         for group in groups:
             if not group.get("name"):
@@ -180,7 +180,7 @@ class Automox(object):
             url_suffix=f"/orgs/{org_id}/tasks/batches/{batch_id}",
         )
 
-    def list_vulnerability_sync_batches(self, org_id, limit, page):
+    def list_vulnerability_sync_batche(self, org_id, limit, page):
         params = {
             "limit": limit,
             "page": page,
@@ -194,7 +194,7 @@ class Automox(object):
 
         return results
 
-    def list_vulnerability_sync_tasks(self, org_id, batch_id, status, limit, page):
+    def list_vulnerability_sync_task(self, org_id, batch_id, status, limit, page):
         params = {
             "limit": limit,
             "page": page,
@@ -210,7 +210,7 @@ class Automox(object):
 
         return results
 
-    def list_policies(self, org_id, limit, page):
+    def list_policie(self, org_id, limit, page):
         params = {
             "limit": limit,
             "page": page,
@@ -249,7 +249,7 @@ class Automox(object):
             params=params
         )
 
-    def list_groups(self, org_id, limit, page):
+    def list_group(self, org_id, limit, page):
         params = {
             "o": org_id,
             "limit": limit,
@@ -389,7 +389,7 @@ def list_organizations():
     orenctl.results(results)
 
 
-def action_on_vulnerability_sync_batch():
+def action_on_vulnerability_sync_batchs():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     batch_id = orenctl.getArg('batch_id') if orenctl.getArg('batch_id') else None
@@ -404,7 +404,7 @@ def action_on_vulnerability_sync_batch():
     orenctl.results(results)
 
 
-def action_on_vulnerability_sync_task():
+def action_on_vulnerability_sync_tasks():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     task_id = orenctl.getArg('task_id') if orenctl.getArg('task_id') else None
@@ -419,7 +419,7 @@ def action_on_vulnerability_sync_task():
     orenctl.results(results)
 
 
-def get_vulnerability_sync_batch():
+def get_vulnerability_sync_batchs():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     batch_id = orenctl.getArg('batch_id') if orenctl.getArg('batch_id') else None
@@ -440,7 +440,7 @@ def list_vulnerability_sync_batches():
     limit = int(orenctl.getArg(LIMIT_IDENTIFIER) if orenctl.getArg(LIMIT_IDENTIFIER) else None)
     page = int(orenctl.getArg(PAGE_IDENTIFIER) if orenctl.getArg(PAGE_IDENTIFIER) else None)
 
-    result = client.list_vulnerability_sync_batches(org_id, limit, page)
+    result = client.list_vulnerability_sync_batche(org_id, limit, page)
 
     results = {
         "outputs_prefix": "Automox.VulnSyncBatches",
@@ -458,7 +458,7 @@ def list_vulnerability_sync_tasks():
     limit = int(orenctl.getArg(LIMIT_IDENTIFIER) if orenctl.getArg(LIMIT_IDENTIFIER) else None)
     page = int(orenctl.getArg(PAGE_IDENTIFIER) if orenctl.getArg(PAGE_IDENTIFIER) else None)
 
-    result = client.list_vulnerability_sync_tasks(org_id, batch_id, status, limit, page)
+    result = client.list_vulnerability_sync_task(org_id, batch_id, status, limit, page)
 
     excluded_keys = [
         'partner_user_id',
@@ -489,7 +489,7 @@ def list_policies():
         "schedule_time",
     ]
 
-    result = client.list_policies(org_id, limit, page)
+    result = client.list_policie(org_id, limit, page)
 
     for i in range(len(result)):
         result[i] = remove_keys(excluded_keys, result[i])
@@ -502,7 +502,7 @@ def list_policies():
     orenctl.results(results)
 
 
-def update_device():
+def update_devices():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     device_id = orenctl.getArg(DEVICE_IDENTIFIER) if orenctl.getArg(DEVICE_IDENTIFIER) else None
@@ -550,7 +550,7 @@ def list_groups():
     limit = int(orenctl.getArg(LIMIT_IDENTIFIER) if orenctl.getArg(LIMIT_IDENTIFIER) else None)
     page = int(orenctl.getArg(PAGE_IDENTIFIER) if orenctl.getArg(PAGE_IDENTIFIER) else None)
 
-    result = client.list_groups(org_id, limit, page)
+    result = client.list_group(org_id, limit, page)
 
     excluded_keys = [
         "wsus_config",
@@ -568,7 +568,7 @@ def list_groups():
     orenctl.results(results)
 
 
-def create_group():
+def create_groups():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     color = orenctl.getArg("color") if orenctl.getArg("color") else None
@@ -600,7 +600,7 @@ def create_group():
     orenctl.results(results)
 
 
-def update_group():
+def update_groups():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     group_id = orenctl.getArg(GROUP_IDENTIFIER) if orenctl.getArg(GROUP_IDENTIFIER) else None
@@ -633,7 +633,7 @@ def update_group():
     orenctl.results(results)
 
 
-def delete_group():
+def delete_groups():
     client = Automox()
     org_id = (orenctl.getArg(ORG_IDENTIFIER) if orenctl.getArg(ORG_IDENTIFIER) else None) or DEFAULT_ORG_ID
     group_id = orenctl.getArg(GROUP_IDENTIFIER) if orenctl.getArg(GROUP_IDENTIFIER) else None
@@ -660,11 +660,11 @@ if orenctl.command() == 'automox_devices_list':
 elif orenctl.command() == 'automox_organizations_list':
     list_organizations()
 elif orenctl.command() == 'automox_vulnerability_sync_batch_action':
-    action_on_vulnerability_sync_batch()
+    action_on_vulnerability_sync_batchs()
 elif orenctl.command() == 'automox_vulnerability_sync_task_action':
-    action_on_vulnerability_sync_task()
+    action_on_vulnerability_sync_tasks()
 elif orenctl.command() == 'automox_vulnerability_sync_batch_get':
-    get_vulnerability_sync_batch()
+    get_vulnerability_sync_batchs()
 elif orenctl.command() == 'automox_vulnerability_sync_batches_list':
     list_vulnerability_sync_batches()
 elif orenctl.command() == 'automox_vulnerability_sync_tasks_list':
@@ -672,7 +672,7 @@ elif orenctl.command() == 'automox_vulnerability_sync_tasks_list':
 elif orenctl.command() == 'automox_policies_list':
     list_policies()
 elif orenctl.command() == 'automox_device_update':
-    update_device()
+    update_devices()
 elif orenctl.command() == 'automox_groups_list':
     list_groups()
 elif orenctl.command() == 'automox_group_create':
