@@ -176,9 +176,9 @@ def get_ip_context_data(responses):
 
 def check_query_response(query_response):
     if not isinstance(query_response, dict):
-        orenctl.results(orenctl.error(EXCEPTION_MESSAGES["INVALID_RESPONSE"].format(query_response)))
+        raise ValueError(EXCEPTION_MESSAGES["INVALID_RESPONSE"].format(query_response))
     if query_response.get("message") not in ["ok", "no results"]:
-        orenctl.results(orenctl.error(EXCEPTION_MESSAGES["QUERY_STATS_RESPONSE"].format(query_response.get("message"))))
+        raise ValueError(EXCEPTION_MESSAGES["QUERY_STATS_RESPONSE"].format(query_response.get("message")))
 
 
 class GreyNoiseV1(object):
@@ -198,7 +198,6 @@ class GreyNoiseV1(object):
     def http_request(self, method, url_suffix, *args, **kwargs):
         response = self.session.request(method=method, url=url_suffix, verify=False, *args, **kwargs)
         if response.status_code < 200 or response.status_code > 299:
-            orenctl.results(orenctl.error(f"Http request error: {response.status_code} {response.content}"))
             raise HTTPError(f"Http request error: {response.status_code} {response.content}")
         return response.json()
 

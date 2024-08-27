@@ -282,7 +282,8 @@ def arg_data():
         "src_port_list": orenctl.getArg("src_port_list") if orenctl.getArg("src_port_list") else None,
         "dest_port_list": orenctl.getArg("dest_port_list") if orenctl.getArg("dest_port_list") else None,
         "protocol": orenctl.getArg("protocol") if orenctl.getArg("protocol") else None,
-        "timeframe": orenctl.getArg("timeframe") if orenctl.getArg("timeframe") else None
+        "timeframe": orenctl.getArg("timeframe") if orenctl.getArg("timeframe") else None,
+        "archive_filename": orenctl.getArg("archive_filename") if orenctl.getArg("archive_filename") else None
     }
     return args
 
@@ -338,7 +339,7 @@ class Endace(object):
         self.check_error_value(args, function_args)
 
         if function_args['end'] < function_args['start']:
-            orenctl.results(orenctl.error('Wrong argument - value of EndTime - cannot be before StartTime'))
+            raise ValueError('Wrong argument - value of EndTime - cannot be before StartTime')
         if int(function_args['start']) > (calendar.timegm(time.gmtime()) - 10):
             orenctl.results(
                 orenctl.error(f'Wrong argument - value of StartTime - {args.get("start")} UTC cannot be in future'))
@@ -358,24 +359,23 @@ class Endace(object):
                     orenctl.error(f'Wrong argument - value of StartTime - {args.get("start")} UTC cannot be in future'))
             function_args['end'] = int(function_args['start']) + int(function_args['timeframe'])
             if int(function_args['end']) > (calendar.timegm(time.gmtime()) - 10):
-                orenctl.results(orenctl.error('Wrong argument - value of EndTime - adjust '
-                                              'timeframe argument such that EndTime is not in future'))
+                raise ValueError('Wrong argument - value of EndTime - adjust '
+                                 'timeframe argument such that EndTime is not in future')
         elif not function_args['start'] and function_args['end']:
             if int(function_args['end']) > (calendar.timegm(time.gmtime()) - 10):
-                orenctl.results(
-                    orenctl.error(f'Wrong argument - value of EndTime - {args.get("end")} UTC cannot be in future'))
+                raise ValueError(f'Wrong argument - value of EndTime - {args.get("end")} UTC cannot be in future')
             function_args['start'] = (int(function_args['end']) - int(function_args['timeframe']))
 
     def check_value_error(self, function_args):
         if (len(function_args['src_host_list']) + len(function_args['dest_host_list'])
             + len(function_args['src_port_list']) + len(function_args['dest_port_list'])) > 10:
-            orenctl.results(orenctl.error("Wrong number of filters items - Limit search filters to 10 items"))
+            raise ValueError("Wrong number of filters items - Limit search filters to 10 items")
         if not function_args['ip'] and not function_args['src_host_list'] and not function_args['dest_host_list']:
-            orenctl.results(orenctl.error("Wrong or missing value - Src and Dest IP arguments"))
+            raise ValueError("Wrong or missing value - Src and Dest IP arguments")
         if not function_args['start'] and not function_args['end'] and not function_args['timeframe']:
-            orenctl.results(orenctl.error("Wrong arguments - StartTime, EndTime or TimeFrame is invalid "))
+            raise ValueError("Wrong arguments - StartTime, EndTime or TimeFrame is invalid ")
         elif (not function_args['start'] or not function_args['end']) and not function_args['timeframe']:
-            orenctl.results(orenctl.error("Wrong arguments - either StartTime or EndTime or Timeframe is invalid "))
+            raise ValueError("Wrong arguments - either StartTime or EndTime or Timeframe is invalid ")
         if function_args['start'] and function_args['end']:
             if function_args['start'] == function_args['end']:
                 orenctl.results(
@@ -402,7 +402,7 @@ class Endace(object):
                     try:
                         response = rp.json()
                     except json.decoder.JSONDecodeError:
-                        orenctl.results(orenctl.error(f"JsonDecodeError - path {path}"))
+                        raise ValueError(f"JsonDecodeError - path {path}")
                     else:
                         meta = response.get("meta", {})
                         payload = response.get("payload")
@@ -514,7 +514,7 @@ class Endace(object):
             try:
                 response = rj.json()
             except json.decoder.JSONDecodeError:
-                raise orenctl.results(orenctl.error(f"JsonDecodeError - path {path}"))
+                raise ValueError(f"JsonDecodeError - path {path}")
             else:
                 meta = response.get("meta", {})
                 if meta:
@@ -634,7 +634,7 @@ class Endace(object):
             try:
                 response = rd.json()
             except json.decoder.JSONDecodeError:
-                orenctl.results(orenctl.error(f"JsonDecodeError - path {path}"))
+                raise ValueError(f"JsonDecodeError - path {path}")
             else:
                 self.check_rd(api, evid, input_args_dict, p2v_url, path, rd, response, result, rotfile_ids)
 
@@ -663,7 +663,7 @@ class Endace(object):
             try:
                 response = rp.json()
             except json.decoder.JSONDecodeError:
-                orenctl.results(orenctl.error(f"JsonDecodeError - path {path}"))
+                raise ValueError(f"JsonDecodeError - path {path}")
             else:
                 meta = response.get("meta", {})
                 payload = response.get("payload")
@@ -747,7 +747,7 @@ class Endace(object):
             try:
                 response = rf.json()
             except json.decoder.JSONDecodeError:
-                orenctl.results(orenctl.error(f"JsonDecodeError - path {path}"))
+                raise ValueError(f"JsonDecodeError - path {path}")
             else:
                 meta = response.get("meta", {})
                 payload = response.get("payload")
@@ -802,7 +802,7 @@ class Endace(object):
                 try:
                     response = rf.json()
                 except json.decoder.JSONDecodeError:
-                    orenctl.results(orenctl.error(f"JsonDecodeError - path {path}"))
+                    raise ValueError(f"JsonDecodeError - path {path}")
                 else:
                     meta = response.get("meta", {})
                     payload = response.get("payload")
@@ -848,7 +848,6 @@ class Endace(object):
         if filesize <= int(args['filesizelimit']):
             result['FileName'] = file['name'] + ".pcap"
             if not file['status']['inUse']:
-                #   File available to download
                 pcapfile_url_path = ("files/%s/stream?format=pcap" % file["id"])
                 d = api.get(pcapfile_url_path)
                 if d.status_code == 200:

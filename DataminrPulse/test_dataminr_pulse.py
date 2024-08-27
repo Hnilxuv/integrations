@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import requests
 from requests import HTTPError
 
-import orenctl
 from DataminrPulse import DataminrPulse, transform_watchlists_data, dataminrpulse_watchlists_get_command, \
     dataminrpulse_alerts_get_command, dataminrpulse_related_alerts_get_command, arg_to_list, raise_value_error, \
     encode_string_results, convert_to_number, arg_to_number, arg_to_boolean, remove_nulls_from_dictionary
