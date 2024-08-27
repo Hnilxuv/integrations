@@ -43,7 +43,9 @@ ALERT_VERSION = 14
 def transform_watchlists_data(watchlists_data):
     list_of_watchlists = watchlists_data.get('watchlists', {}).values()
     list_of_watchlists = list(list_of_watchlists)
-    list_of_watchlists = reduce(concat, list_of_watchlists)
+    if not list_of_watchlists:
+        return []
+    list_of_watchlists = reduce(concat, list_of_watchlists, [])
     return list_of_watchlists
 
 
@@ -163,10 +165,7 @@ def validate_params_for_alerts_get(watchlist_ids, watchlist_names, query, _from,
 
 
 def remove_nulls_from_dictionary(data):
-    list_of_keys = list(data.keys())[:]
-    for key in list_of_keys:
-        if data[key] in ('', None, [], {}, ()):
-            del data[key]
+    return {key: value for key, value in data.items() if value not in ('', None, [], {}, ())}
 
 
 def remove_empty_elements(data):
@@ -231,7 +230,7 @@ def dataminrpulse_watchlists_get_command():
     orenctl.results(result)
 
 
-def dataminrpulse_alerts_get():
+def dataminrpulse_alerts_get_command():
     client = DataminrPulse()
     watchlist_names = arg_to_list(orenctl.getArg('watchlist_names') if orenctl.getArg('watchlist_names') else '')
     watchlist_ids = arg_to_list(orenctl.getArg('watchlist_names') if orenctl.getArg('watchlist_names') else '')
@@ -300,6 +299,6 @@ def dataminrpulse_related_alerts_get_command():
 if orenctl.command() == "dataminrpulse_watchlists_get":
     dataminrpulse_watchlists_get_command()
 elif orenctl.command() == "dataminrpulse_alerts_get":
-    dataminrpulse_alerts_get()
+    dataminrpulse_alerts_get_command()
 elif orenctl.command() == "dataminrpulse_related_alerts_get":
     dataminrpulse_related_alerts_get_command()
