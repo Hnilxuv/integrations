@@ -60,17 +60,19 @@ def xml_object_to_json(xml_object):
 
 def entry_object_xml_to_json(context, entries, is_date_field, keys):
     for entry in entries:
-        if len(entry) == len(keys):
+        if isinstance(entry, dict) and len(entry) == len(keys):
             new_entry = {}
-            for i in range(len(entry)):
-                if is_date_field[i] and entry[i].isdigit():
-                    timestamp = int(entry[i]) / 1000
+            for i, key in enumerate(keys):
+                value = entry.get(key, '')
+                if is_date_field[i] and isinstance(value, str) and value.isdigit():
+                    timestamp = int(value) / 1000
                     seconds = int(timestamp)
                     milliseconds = int((timestamp - seconds) * 1000)
                     date_entry = f"{seconds}.{milliseconds:03d}Z"
-                    entry[i] = date_entry
-                new_entry[keys[i]] = entry[i]
+                    value = date_entry
+                new_entry[key] = value
             context.append(new_entry)
+
 
 
 def get_chart_request(user_session_id, search_session_id):
@@ -92,23 +94,32 @@ def get_events_request(user_session_id, search_session_id, offset=None, dir=None
         'user_session_id': user_session_id
     }
 
-    if offset:
-        body_args['offset'] = int(offset)
+    if offset is not None:
+        try:
+            body_args['offset'] = int(offset)
+        except ValueError:
+            raise ValueError('Offset must be a valid integer')
 
-    if dir:
+    if dir is not None:
+        if dir not in ['asc', 'desc']:
+            raise ValueError('Dir must be "asc" or "desc"')
         body_args['dir'] = dir
 
-    if length:
+    if length is not None:
         if not str(length).isdigit():
             raise ValueError('Length must be a number')
         body_args['length'] = int(length)
 
-    if fields:
+    if fields is not None:
+        if not isinstance(fields, str):
+            raise TypeError('Fields must be a comma-separated string')
         body_args['fields'] = fields.split(",")
 
-    res_body = ArcSightLogger().http_request('POST', 'server/search/events', None, body_args)
+    res_body = ArcSightLogger().http_request('POST', '/server/search/events', None, body_args)
     events = xml_object_to_json(res_body)
+
     return events
+
 
 
 def create_entry(data, mapping):
@@ -143,8 +154,11 @@ class ArcSightLogger(object):
         self.proxy = orenctl.getParam('proxy')
         self.session = requests.session()
 
-        if self.url.slice(-1) == '/':
-            self.server_url = self.url.slice(0, -1)
+        if self.url is None:
+            raise ValueError("The 'url' parameter is missing or is None.")
+
+        if self.url[-1] == '/':
+            self.url = self.url[:-1]
 
     def http_request(self, method, url_suffix, *args, **kwargs):
         url = self.url + url_suffix
@@ -155,13 +169,15 @@ class ArcSightLogger(object):
         return response.json()
 
     def login(self, username, password):
-        SERVER_URL = self.server_url + ':' + self.port + '/'
+        SERVER_URL = self.url + ':' + self.port + '/'
+
         full_url = f"{SERVER_URL}core-service/rest/LoginService/login"
 
         body_obj = {
             'login': username,
             'password': password
         }
+
         body_string = encode_to_url_query(body_obj)[1:]
 
         headers = {
@@ -182,13 +198,14 @@ class ArcSightLogger(object):
             raise ValueError('Login to ArcSight Logger has failed - Session id is missing from response')
 
         user_session_id = res_body['loginResponse']['return']
+
         return user_session_id
 
     def logout(self, user_session_id):
         if not user_session_id:
             raise ValueError('Unable to perform logout from ArcSight Logger. Session id is missing')
 
-        full_url = self.server_url + 'core-service/rest/LoginService/logout'
+        full_url = self.url + 'core-service/rest/LoginService/logout'
         body_obj = {
             'authToken': user_session_id
         }
@@ -209,39 +226,42 @@ class ArcSightLogger(object):
 
     def start_search_session_request(self, args):
         search_session_id = generate_search_session_id()
+
         body_args = {
             'search_session_id': search_session_id,
             'user_session_id': args.get('user_session_id')
         }
 
-        if args.get('query'):
+        if 'query' in args:
             body_args['query'] = args.get('query')
 
-        if args.get('timeout'):
+        if 'timeout' in args:
             body_args['timeout'] = int(args.get('timeout'))
 
-        if args.get('last_days'):
+        if 'last_days' in args:
             if not str(args.get('last_days')).isdigit():
                 raise ValueError('LastDays must be a number')
             ld = int(args.get('last_days'))
             now = time.gmtime()
-            body_args['end_time'] = now.isoformat() + 'Z'
-            now -= timedelta(days=ld)
-            body_args['start_time'] = now.isoformat() + 'Z'
-        elif args.get('start_time') and args.get('end_time'):
+            end_time = time.strftime('%Y-%m-%dT%H:%M:%SZ', now)
+            body_args['end_time'] = end_time
+            start_time = time.gmtime(time.mktime(now) - ld * 86400)
+            body_args['start_time'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', start_time)
+
+        elif 'start_time' in args and 'end_time' in args:
             body_args['end_time'] = args.get('end_time')
             body_args['start_time'] = args.get('start_time')
 
-        if args.get('discover_fields'):
+        if 'discover_fields' in args:
             body_args['discover_fields'] = parse_bool(args.get('discover_fields'))
 
-        if args.get('summary_fields'):
+        if 'summary_fields' in args:
             body_args['summary_fields'] = parse_array(args.get('summary_fields'))
 
-        if args.get('field_summary'):
+        if 'field_summary' in args:
             body_args['field_summary'] = parse_bool(args.get('field_summary'))
 
-        if args.get('local_search'):
+        if 'local_search' in args:
             body_args['local_search'] = parse_bool(args.get('local_search'))
 
         return search_session_id
