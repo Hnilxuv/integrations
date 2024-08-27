@@ -26,40 +26,33 @@ def date_to_timestamp(date_str_or_dt, date_format='%Y-%m-%dT%H:%M:%S'):
     return int(time.mktime(date_str_or_dt.timetuple()) * 1000)
 
 
-def parse_date_range(date_range, date_format=None, to_timestamp=False, timezone=0, utc=True):
+from datetime import datetime, timedelta, timezone
+
+def parse_date_range(date_range, date_format=None, to_timestamp=False, timezone_offset=0, utc=True):
     range_split = date_range.strip().split(' ')
+
     if len(range_split) != 2:
-        orenctl.results(
-            orenctl.error('date_range must be "number date_range_unit", examples: (2 hours, 4 minutes,6 months, 1 day, '
-                          'etc.)'))
+        raise ValueError('date_range must be "number date_range_unit", examples: (2 hours, 4 minutes, 6 months, 1 day, etc.)')
 
     try:
         number = int(range_split[0])
     except ValueError:
-        orenctl.results(orenctl.error('The time value is invalid. Must be an integer.'))
+        raise ValueError('The time value is invalid. Must be an integer.')
 
     unit = range_split[1].lower()
-    if unit not in ['minute', 'minutes',
-                    'hour', 'hours',
-                    'day', 'days',
-                    'month', 'months',
-                    'year', 'years',
-                    ]:
-        orenctl.results(
-            orenctl.error('The unit of date_range is invalid. Must be minutes, hours, days, months or years.'))
+    if unit not in ['minute', 'minutes', 'hour', 'hours', 'day', 'days', 'month', 'months', 'year', 'years']:
+        raise ValueError('The unit of date_range is invalid. Must be minutes, hours, days, months, or years.')
 
-    if not isinstance(timezone, (int, float)):
-        orenctl.results(
-            orenctl.error('Invalid timezone "{}" - must be a number (of type int or float).'.format(timezone)))
+    if not isinstance(timezone_offset, (int, float)):
+        raise ValueError('Invalid timezone_offset "{}" - must be a number (of type int or float).'.format(timezone_offset))
 
     if utc:
-        utc_now = datetime.now(timezone.utc)
-        end_time = utc_now + timedelta(hours=timezone)
-        start_time = utc_now + timedelta(hours=timezone)
+        now = datetime.now(timezone.utc)
     else:
         now = datetime.now()
-        end_time = now + timedelta(hours=timezone)
-        start_time = now + timedelta(hours=timezone)
+
+    end_time = now
+    start_time = now
 
     if 'minute' in unit:
         start_time = end_time - timedelta(minutes=number)
@@ -79,6 +72,7 @@ def parse_date_range(date_range, date_format=None, to_timestamp=False, timezone=
         return datetime.strftime(start_time, date_format), datetime.strftime(end_time, date_format)
 
     return start_time, end_time
+
 
 
 def format_time_range(range_arg):
@@ -134,12 +128,13 @@ def parse_key_value_arg(arg_str):
     if arg_str:
         tags = []
         for item in arg_str.split(','):
-            try:
-                key, value = item.split(':')
-            except ValueError:
+            parts = item.split(':', 1)
+            if len(parts) != 2:
+                raise ValueError(f"Got invalid key/value pair {item}.")
+            key, value = parts
+            if not key or not value:
                 raise ValueError(f"Got invalid key/value pair {item}.")
             tags.append({key.strip(): value.strip()})
-
         return tags
     else:
         return None
@@ -285,7 +280,7 @@ class BoxV2(object):
             params=remove_empty_elements(query_params)
         )
 
-    def search_user_id(self, as_user):
+    def search_user_ids(self, as_user):
         try:
             response = self.list_users(fields='id,name', filter_term=as_user, limit=1, offset=0)
             matched_user_id = response.get('entries')[0].get('id')
@@ -299,7 +294,7 @@ class BoxV2(object):
         as_user = self.handle_default_user(as_user_arg=as_user_arg)
         if re.match(emailRegex, as_user):
             if self.search_user_id is True:
-                return self.search_user_id(as_user=as_user)
+                return self.search_user_ids(as_user=as_user)
             else:
                 raise ValueError("The current as-user is invalid. Please either specify the "
                                  "user ID, or enable the auto-detect user IDs setting.")
