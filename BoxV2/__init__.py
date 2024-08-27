@@ -28,11 +28,13 @@ def date_to_timestamp(date_str_or_dt, date_format='%Y-%m-%dT%H:%M:%S'):
 
 from datetime import datetime, timedelta, timezone
 
+
 def parse_date_range(date_range, date_format=None, to_timestamp=False, timezone_offset=0, utc=True):
     range_split = date_range.strip().split(' ')
 
     if len(range_split) != 2:
-        raise ValueError('date_range must be "number date_range_unit", examples: (2 hours, 4 minutes, 6 months, 1 day, etc.)')
+        raise ValueError(
+            'date_range must be "number date_range_unit", examples: (2 hours, 4 minutes, 6 months, 1 day, etc.)')
 
     try:
         number = int(range_split[0])
@@ -44,7 +46,8 @@ def parse_date_range(date_range, date_format=None, to_timestamp=False, timezone_
         raise ValueError('The unit of date_range is invalid. Must be minutes, hours, days, months, or years.')
 
     if not isinstance(timezone_offset, (int, float)):
-        raise ValueError('Invalid timezone_offset "{}" - must be a number (of type int or float).'.format(timezone_offset))
+        raise ValueError(
+            'Invalid timezone_offset "{}" - must be a number (of type int or float).'.format(timezone_offset))
 
     if utc:
         now = datetime.now(timezone.utc)
@@ -65,14 +68,17 @@ def parse_date_range(date_range, date_format=None, to_timestamp=False, timezone_
     elif 'year' in unit:
         start_time = end_time - timedelta(days=number * 365)
 
+    if timezone_offset:
+        start_time += timedelta(hours=timezone_offset)
+        end_time += timedelta(hours=timezone_offset)
+
     if to_timestamp:
-        return date_to_timestamp(start_time), date_to_timestamp(end_time)
+        return start_time.timestamp(), end_time.timestamp()
 
     if date_format:
-        return datetime.strftime(start_time, date_format), datetime.strftime(end_time, date_format)
+        return start_time.strftime(date_format), end_time.strftime(date_format)
 
     return start_time, end_time
-
 
 
 def format_time_range(range_arg):

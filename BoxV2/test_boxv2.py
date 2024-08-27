@@ -17,6 +17,7 @@ class TestBoxv2(unittest.TestCase):
     def setUp(self):
         self.client = MagicMock()
         self.instance = BoxV2()
+        self.box_v2 = BoxV2()
 
     @patch('orenctl.getParam')
     @patch('requests.Session.request')
@@ -318,15 +319,6 @@ class TestBoxv2(unittest.TestCase):
         self.assertEqual(start, expected_start)
         self.assertEqual(end, expected_end)
 
-    def test_date_range_to_timestamp(self):
-        date_range = '3 days'
-        start, end = parse_date_range(date_range, to_timestamp=True, timezone_offset=0, utc=True)
-        expected_start = date_to_timestamp(datetime.now(timezone.utc) - timedelta(days=3))
-        expected_end = date_to_timestamp(datetime.now(timezone.utc))
-
-        self.assertEqual(start, expected_start)
-        self.assertEqual(end, expected_end)
-
     def test_invalid_date_range(self):
         with self.assertRaises(ValueError):
             parse_date_range('invalid range', to_timestamp=False, timezone_offset=0, utc=True)
@@ -531,4 +523,283 @@ class TestBoxv2(unittest.TestCase):
         )
         self.assertEqual(result, 'response_data')
 
+    def test_parse_date_range_months(self):
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=6 * 30)
+        result_start_time, result_end_time = parse_date_range("6 months")
+        self.assertAlmostEqual(result_start_time, start_time, delta=timedelta(seconds=1))
+        self.assertAlmostEqual(result_end_time, end_time, delta=timedelta(seconds=1))
 
+    def test_parse_date_range_years(self):
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=2 * 365)
+        result_start_time, result_end_time = parse_date_range("2 years")
+        self.assertAlmostEqual(result_start_time, start_time, delta=timedelta(seconds=1))
+        self.assertAlmostEqual(result_end_time, end_time, delta=timedelta(seconds=1))
+
+    def test_parse_date_range_minutes(self):
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(minutes=5)
+        result_start_time, result_end_time = parse_date_range("5 minutes")
+        self.assertAlmostEqual(result_start_time, start_time, delta=timedelta(seconds=1))
+        self.assertAlmostEqual(result_end_time, end_time, delta=timedelta(seconds=1))
+
+    def test_timezone_offset(self):
+        start_time, end_time = parse_date_range("1 hour", timezone_offset=2, utc=False)
+        expected_start_time = datetime.now() - timedelta(hours=1 - 2)  # Adjust for timezone
+        expected_end_time = datetime.now() + timedelta(hours=2)
+
+        self.assertAlmostEqual(start_time.timestamp(), expected_start_time.timestamp(), delta=1)
+        self.assertAlmostEqual(end_time.timestamp(), expected_end_time.timestamp(), delta=1)
+
+    def test_to_timestamp(self):
+        start_timestamp, end_timestamp = parse_date_range("30 minutes", to_timestamp=True, utc=True)
+        expected_start_time = datetime.now(timezone.utc) - timedelta(minutes=30)
+        expected_end_time = datetime.now(timezone.utc)
+
+        self.assertAlmostEqual(start_timestamp, expected_start_time.timestamp(), delta=1)
+        self.assertAlmostEqual(end_timestamp, expected_end_time.timestamp(), delta=1)
+
+    @patch('orenctl.getParam')
+    def test_prepare_params_object(self, mock_get_param):
+        mock_get_param.side_effect = lambda x: {
+            'type': 'document',
+            'ancestor_folder_ids': '123',
+            'item_name': 'report',
+            'item_description': None,
+            'comments': None,
+            'tag': None,
+            'created_range': None,
+            'file_extensions': '.pdf',
+            'limit': '10',
+            'offset': '0',
+            'owner_uids': None,
+            'trash_content': 'false',
+            'updated_at_range': None,
+            'query': None
+        }.get(x, '')
+
+        query_handler = QueryHandler(args={})
+
+        params = query_handler.prepare_params_object()
+        expected_params = {
+            'content_types': ['name'],
+            'type': 'document',
+            'ancestor_folder_ids': '123',
+            'query': 'report',
+            'file_extensions': '.pdf',
+            'limit': '10',
+            'offset': '0',
+            'trash_content': 'false',
+        }
+
+        self.assertEqual(params, expected_params)
+
+    @patch('BoxV2.BoxV2.list_users')
+    def test_search_user_ids_success(self, mock_list_users):
+        mock_list_users.return_value = {
+            'entries': [{'id': '12345', 'name': 'test_user'}]
+        }
+        box_v2 = BoxV2()
+
+        user_id = box_v2.search_user_ids('test_user')
+
+        self.assertEqual(user_id, '12345')
+
+    @patch('BoxV2.BoxV2.list_users')
+    def test_search_user_ids_no_entries(self, mock_list_users):
+        mock_list_users.return_value = {
+            'entries': []
+        }
+
+        box_v2 = BoxV2()
+
+        with self.assertRaises(ValueError) as context:
+            box_v2.search_user_ids('nonexistent_user')
+
+    @patch('BoxV2.BoxV2.search_user_ids')
+    @patch('BoxV2.BoxV2.handle_default_user')
+    def test_handle_as_user_valid_email_and_auto_detect(self, mock_handle_default_user, mock_search_user_ids):
+        mock_handle_default_user.return_value = 'test@example.com'
+        mock_search_user_ids.return_value = '12345'
+
+        box_v2 = BoxV2()
+        box_v2.search_user_id = True
+
+        user_id = box_v2.handle_as_user('test@example.com')
+
+        self.assertEqual(user_id, '12345')
+
+    @patch('BoxV2.BoxV2.handle_default_user')
+    def test_handle_as_user_valid_email_without_auto_detect(self, mock_handle_default_user):
+        mock_handle_default_user.return_value = 'test@example.com'
+
+        box_v2 = BoxV2()
+        box_v2.search_user_id = False
+
+        with self.assertRaises(ValueError) as context:
+            box_v2.handle_as_user('test@example.com')
+
+        self.assertIn(
+            "The current as-user is invalid. Please either specify the user ID, or enable the auto-detect user IDs setting.",
+            str(context.exception))
+
+    @patch('BoxV2.BoxV2.handle_default_user')
+    def test_handle_as_user_invalid_email(self, mock_handle_default_user):
+        mock_handle_default_user.return_value = 'invalid-email'
+
+        box_v2 = BoxV2()
+
+        result = box_v2.handle_as_user('invalid-email')
+
+        self.assertEqual(result, 'invalid-email')
+
+    @patch('BoxV2.BoxV2.__init__', return_value=None)
+    def test_handle_default_user_no_default(self, mock_init):
+        box_v2 = BoxV2()
+        box_v2.default_as_user = None
+
+        with self.assertRaises(ValueError) as context:
+            box_v2.handle_default_user(None)
+
+        self.assertIn(
+            "A user ID has not been specified. Please configure a default, or add the user ID in the as_user argument.",
+            str(context.exception))
+
+    @patch('BoxV2.BoxV2.__init__', return_value=None)
+    def test_handle_default_user_with_default(self, mock_init):
+        box_v2 = BoxV2()
+        box_v2.default_as_user = 'default_user_id'
+
+        result = box_v2.handle_default_user(None)
+
+        self.assertEqual(result, 'default_user_id')
+
+    @patch('BoxV2.BoxV2.__init__', return_value=None)
+    def test_handle_default_user_with_provided_user(self, mock_init):
+        box_v2 = BoxV2()
+        box_v2.default_as_user = None
+
+        result = box_v2.handle_default_user('provided_user_id')
+
+        self.assertEqual(result, 'provided_user_id')
+
+    @patch('BoxV2.BoxV2.__init__', return_value=None)
+    def test_search_content(self, mock_init):
+        box_v2 = BoxV2()
+        as_user = 'test_user'
+        query_object = MagicMock()
+        query_object.prepare_params_object.return_value = {'param1': 'value1'}
+
+        box_v2.handle_as_user.return_value = 'validated_user_id'
+
+        box_v2.http_request.return_value = {'result': 'success'}
+
+        result = self.box_v2.search_content(as_user, query_object)
+
+        self.assertEqual(self.box_v2.session.headers['As-User'], 'validated_user_id')
+
+        self.assertEqual(result, {'result': 'success'})
+
+    @patch('BoxV2.BoxV2.http_request')
+    @patch('BoxV2.BoxV2.handle_as_user')
+    @patch('requests.Session.request')
+    def test_search_content(self, mock_session, mock_handle_as_user, mock_http_request):
+        box_v2_instance = BoxV2()
+
+        as_user = "test_user"
+        query_object = MagicMock()
+        query_object.prepare_params_object.return_value = {"query": "test_query"}
+
+        mock_handle_as_user.return_value = "validated_test_user"
+
+        # Act
+        result = box_v2_instance.search_content(as_user, query_object)
+
+        self.assertIsNotNone(result)
+
+    @patch('BoxV2.BoxV2.http_request')
+    @patch('BoxV2.BoxV2.handle_as_user')
+    def test_get_folder(self, mock_handle_as_user, mock_http_request):
+        #  BoxV2
+        box_v2_instance = BoxV2()
+
+        folder_id = '12345'
+        as_user = 'test_user'
+
+        mock_handle_as_user.return_value = 'validated_test_user'
+        mock_http_request.return_value = {'folder': 'data'}
+
+        result = box_v2_instance.get_folder(folder_id, as_user)
+
+        mock_handle_as_user.assert_called_once_with(as_user_arg=as_user)
+
+        self.assertEqual(box_v2_instance.session.headers.get('As-User'), 'validated_test_user')
+
+        self.assertEqual(result, {'folder': 'data'})
+
+    @patch('BoxV2.BoxV2.http_request')
+    @patch('BoxV2.BoxV2.handle_as_user')
+    def test_list_folder_items(self, mock_handle_as_user, mock_http_request):
+        box_v2_instance = BoxV2()
+
+        folder_id = '12345'
+        as_user = 'test_user'
+        limit = 10
+        offset = 0
+        sort = 'name'
+
+        mock_handle_as_user.return_value = 'validated_test_user'
+        mock_http_request.return_value = {'items': 'data'}
+
+        result = box_v2_instance.list_folder_items(folder_id, as_user, limit, offset, sort)
+        self.assertIsNotNone(result)
+
+    @patch('BoxV2.BoxV2.http_request')
+    @patch('BoxV2.BoxV2.handle_as_user')
+    def test_create_upload_session(self, mock_handle_as_user, mock_http_request):
+        box_v2_instance = BoxV2()
+
+        file_name = 'test_file.txt'
+        file_size = 123456
+        folder_id = '67890'
+        as_user = 'test_user'
+
+        mock_handle_as_user.return_value = 'validated_test_user'
+        mock_http_request.return_value = {'upload_url': 'https://upload.url'}
+
+        result = box_v2_instance.create_upload_session(file_name, file_size, folder_id, as_user)
+
+        self.assertIsNotNone(result)
+
+    @patch('BoxV2.BoxV2.http_request')
+    @patch('BoxV2.BoxV2.handle_as_user')
+    def test_get_current_user(self, mock_handle_as_user, mock_http_request):
+        box_v2_instance = BoxV2()
+
+        as_user = "test_user"
+        validated_as_user = "validated_test_user"
+        mock_handle_as_user.return_value = validated_as_user
+        expected_response = {"id": "user_id", "name": "Test User"}
+        mock_http_request.return_value = expected_response
+
+        result = box_v2_instance.get_current_user(as_user)
+        self.assertIsNotNone(result)
+
+    @patch('BoxV2.BoxV2.http_request')
+    @patch('BoxV2.BoxV2.handle_as_user')
+    def test_list_events(self, mock_handle_as_user, mock_http_request):
+        box_v2_instance = BoxV2()
+
+        as_user = "test_user"
+        stream_type = "admin_logs"
+        created_after = "2024-01-01T00:00:00Z"
+        limit = 50
+        validated_as_user = "validated_test_user"
+        mock_handle_as_user.return_value = validated_as_user
+        expected_response = {"events": [{"id": "event_id", "type": "event_type"}]}
+        mock_http_request.return_value = expected_response
+
+        result = box_v2_instance.list_events(as_user, stream_type, created_after, limit)
+
+        self.assertIsNotNone(result)
