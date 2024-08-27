@@ -220,10 +220,10 @@ def delete_keys_from_dict(dictionary, keys_to_delete):
     return modified_dict
 
 
-def get_context_output(response, contexts_to_delete, item_to_add=None, ):
+def get_context_output(response, contexts_to_delete, item_to_add=None):
     data_list = response.get("data")
 
-    if not isinstance(data_list, List):
+    if not isinstance(data_list, list):
         data_list = [data_list]
 
     context_outputs = []
@@ -233,8 +233,8 @@ def get_context_output(response, contexts_to_delete, item_to_add=None, ):
         context_outputs.append(modified_data)
 
     if item_to_add:
-        for _ in context_outputs:
-            _ |= {item_to_add[0]: item_to_add[1]}
+        for item in context_outputs:
+            item.update({item_to_add[0]: item_to_add[1]})
 
     return context_outputs
 
@@ -394,7 +394,7 @@ def get_hash_type(file_hash):
 class CiscoAMP(object):
     def __init__(self):
         self.server_url = orenctl.getParam("server_url")
-        self.client_id = orenctl.getParam("client_id ")
+        self.client_id = orenctl.getParam("client_id")
         self.api_key = orenctl.getParam("api_key")
         self.reliability = orenctl.getParam("integrationReliability")
         self.proxy = orenctl.getParam("proxy") if orenctl.getParam("proxy") else False
@@ -811,7 +811,7 @@ def file_command():
     for file_hash in files:
         hash_type = get_hash_type(file_hash)
 
-        if hash_type != "sha256":
+        if hash_type != "SHA-256":
             raise ValueError(f'Cisco AMP: Hash "{file_hash}" is not of type SHA-256')
 
         raw_response = client.event_list_request(detection_sha256=file_hash)
