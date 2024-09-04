@@ -365,23 +365,23 @@ def install_policy_package_status_command():
     return orenctl.results({"installed_policy_package_status": task_data})
 
 
-if orenctl.command() == "fortimanager-devices-list":
+if orenctl.command() == "fortimanager_devices_list":
     list_adom_devices_command()
-elif orenctl.command() == "fortimanager-address-list":
+elif orenctl.command() == "fortimanager_address_list":
     list_firewall_addresses_command()
-elif orenctl.command() == "fortimanager-address-create":
+elif orenctl.command() == "fortimanager_address_create":
     create_address_command()
-elif orenctl.command() == "fortimanager-address-update":
+elif orenctl.command() == "fortimanager_address_update":
     update_address_command()
-elif orenctl.command() == "fortimanager-firewall-policy-package-list":
+elif orenctl.command() == "fortimanager_firewall_policy_package_list":
     list_policy_packages_command()
-elif orenctl.command() == "fortimanager-firewall-policy-package-update":
+elif orenctl.command() == "fortimanager_firewall_policy_package_update":
     update_policy_package_command()
-elif orenctl.command() == "fortimanager-firewall-policy-list":
+elif orenctl.command() == "fortimanager_firewall_policy_list":
     list_policies_command()
-elif orenctl.command() == "fortimanager-firewall-policy-update":
+elif orenctl.command() == "fortimanager_firewall_policy_update":
     update_policy_command()
-elif orenctl.command() == "fortimanager-firewall-policy-package-install":
+elif orenctl.command() == "fortimanager_firewall_policy_package_install":
     install_policy_package_command()
-elif orenctl.command() == "fortimanager-firewall-policy-package-install-status":
+elif orenctl.command() == "fortimanager_firewall_policy_package_install_status":
     install_policy_package_status_command()
